@@ -8,7 +8,7 @@
 
 ## Automated, Fast, Purchasing.
 
-[![PcPartPrices Demo](ppp.gif)](https://academic-demo.netlify.com/post/writing-technical-content/)
+[![PcPartPrices Demo](ppp.gif)]()
 
 - with the fetched part names the application aggregates prices from one of the most popular marketplaces in the world!
 - tested on windows 10
