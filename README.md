@@ -16,7 +16,7 @@ original program:
 
 revised program with asynchronous requests:
 
-[![PcPartPrices Demo](ppp_async.gif)
+![PcPartPrices Demo](ppp_async.gif)
 
 
 
