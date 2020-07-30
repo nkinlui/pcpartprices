@@ -1,4 +1,4 @@
-![PcPartPrices Demo](banner.jpg)
+![PcPartPrices Demo](banner.JPG)
 
 # 																
 
