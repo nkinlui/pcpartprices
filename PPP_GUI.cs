@@ -3,11 +3,13 @@
     using System;
     using System.Collections.Generic;
     using System.Drawing;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
     using System.Windows.Forms;
     using HtmlAgilityPack;
     using static System.Windows.Forms.ListViewItem;
@@ -161,13 +163,115 @@
             return myPartsPrices;
         }
 
+
+        public async static Task<double> AsyncAvgPrice(string query)
+        {
+            int count = 0;
+            float average = 0;
+
+            if (query.Equals("-69"))
+            {
+                return -69;
+            }
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    HtmlWeb web = new HtmlWeb();
+                    HtmlAgilityPack.HtmlDocument document = web.Load("https://www.ebay.com/sch/i.html?_from=R40&_nkw=" + query);
+                    HtmlNode[] nodes = document.DocumentNode.SelectNodes("//span[@class='s-item__price']").ToArray();
+                    Regex regex = new Regex(@"\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})");
+                    foreach (HtmlNode item in nodes)
+                    {
+                        if (item.InnerHtml.Substring(0, 1).Equals("$") && count < 4)
+                        {
+                            average += float.Parse(regex.Match(item.InnerHtml).Value);
+                        }
+                        else if (count >= 4)
+                        {
+                            break;
+                        }
+
+                        count++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+            ).ConfigureAwait(false);
+            return average / (count - 1);
+        }
+
+        public async Task<IEnumerable<double>> AsyncGetPrices(List<string> myParts)
+        {
+
+            var myPartsPrices = new List<Task<double>>();
+            foreach (string part in myParts)
+            {
+                if (part != null && !part.Equals(string.Empty))
+                {
+                    if (part.Substring(part.Length - 1).Equals(":"))
+                    {
+                        myPartsPrices.Add(AsyncAvgPrice("-69"));
+                        //listView1.Items[i].SubItems.Add(string.Empty);
+                    }
+                    else
+                    {
+                        string query = part.Replace(" ", "+");
+                        //double avg = AvgPrice(query);
+                        // Console.WriteLine(string.Empty + part + " - $" + avg);
+                        try
+                        {
+                            myPartsPrices.Add(AsyncAvgPrice(query));
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("extra part " + e);
+                        }
+
+                        //total += avg;
+                        //string val2 = string.Format("${0:N2}", avg);
+                        //listView1.Items[i].SubItems.Add(val2);
+                    }
+                }
+                pBar1.PerformStep();
+            }
+            return await Task.WhenAll(myPartsPrices).ConfigureAwait(false);
+        }
+
+
+        private ListView listView1 = new ListView();
+        public void populateList(List<double> prices)
+        {
+            int i = 0;
+            total = 0;
+            foreach (double price in prices)
+            {
+                if (price < 0)
+                {
+                    listView1.Items[i].SubItems.Add(string.Empty);
+                }
+                else
+                {
+                    total += price;
+                    string val2 = string.Format("${0:N2}", price);
+                    listView1.Items[i].SubItems.Add(val2);
+                }
+                i++;
+                pBar1.PerformStep();
+            }
+        }
+
         private List<string> myParts1 = new List<string>();
         private Dictionary<string, double> myPartsPrices1 = new Dictionary<string, double>();
-        private ListView listView1 = new ListView();
+
         private Button button1 = new Button();
         private Button button2 = new Button();
         private Label label1 = new Label();
-
+        private bool async = true;
         public PPP_GUI()
         {
             try
@@ -284,7 +388,19 @@
             this.pBar1.Value = 1;
             this.button1.Text = "Fetching Prices...";
             ListViewItem item1 = new ListViewItem("item1", 0);
-            this.myPartsPrices1 = this.GetPrices(this.myParts1);
+
+
+
+            if (async == true)
+            {
+                List<double> prices = ((double[])AsyncGetPrices(myParts1).Result).ToList();
+                populateList(prices);
+            }
+            else
+            {
+                myPartsPrices1 = GetPrices(myParts1);
+            }
+
             string val3 = string.Format("${0:N2}", this.total);
             ListViewSubItem item3 = new ListViewSubItem();
             item3.Text = val3;
@@ -301,38 +417,32 @@
             Cursor.Current = Cursors.WaitCursor;
             string cd = Directory.GetCurrentDirectory();
             string localDate = DateTime.Now.ToString("MM-dd-yyyy");
-            int count = this.listView1.Items.Count;
+            int count = 0;
+            count = this.listView1.Items.Count;
             using (TextWriter tw = new StreamWriter(cd + @"\\PPP_results_" + localDate + ".txt"))
             {
                 foreach (ListViewItem item in this.listView1.Items)
                 {
-                    if (this.myPartsPrices1.ContainsKey(item.Text))
+
+                    if (item.SubItems.Count == 1)
                     {
-                        if (this.myPartsPrices1[item.Text] == -69)
+                        tw.WriteLine(item.Text);
+                    }
+                    else
+                    {
+                        if (item.SubItems[1].Text.Equals(string.Empty))
                         {
                             tw.WriteLine(item.Text);
                         }
                         else
                         {
-                            tw.WriteLine(item.Text + "," + this.myPartsPrices1[item.Text]);
+                            tw.WriteLine(item.Text + "," + decimal.Parse(item.SubItems[1].Text, NumberStyles.AllowCurrencySymbol | NumberStyles.Number));
                         }
                     }
-                    else if (item.Text.Equals(string.Empty))
-                    {
-                        tw.WriteLine(string.Empty);
-                    }
-                    else if (count <= 1)
-                    {
-                        tw.WriteLine(item.Text + "," + this.total);
-                    }
-                    else
-                    {
-                        tw.WriteLine(item.Text);
-                    }
-
-                    count--;
                 }
+
             }
+
 
             this.pBar1.Value = this.myParts1.Count();
             Cursor.Current = Cursors.Default;

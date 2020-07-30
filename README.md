@@ -8,8 +8,19 @@
 
 ## Automated, Fast, Estimation
 
+original program:
+
 [![PcPartPrices Demo](ppp.gif)](#)
 
+
+
+revised program with asynchronous requests:
+
+[![PcPartPrices Demo](ppp_async.gif)
+
+
+
+- asynchronous version does the same thing but takes only around 15%as much time. that's about a 85% reduction in time when compared to the original (15~ seconds vs 2~ seconds). 
 - with the fetched part names the application aggregates prices from one of the most popular marketplaces in the world!
 - tested on windows 10
 
