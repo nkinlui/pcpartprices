@@ -1,4 +1,6 @@
-# 																PcPartPrices (2020)
+![PcPartPrices Demo](banner.jpg)
+
+# 																
 
 ### The executable to easily list parts and estimate prices  🔥 🧻 📈
 
